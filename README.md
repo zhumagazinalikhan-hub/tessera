@@ -11,7 +11,7 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-With no Firebase or Supabase keys the app runs in **demo mode**: no sign-in, and data stays in this browser (localStorage).
+The app is connected to the **tessera-5216d** Firebase project (config in `src/data/firebase.config.ts`). Run `VITE_DEMO=1 npm run dev` for **demo mode**: no sign-in, and data stays in this browser (localStorage).
 
 ## Connect Firebase (accounts + sync)
 

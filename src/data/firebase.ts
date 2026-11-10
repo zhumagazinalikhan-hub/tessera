@@ -23,19 +23,21 @@ import {
 import { defaultProfile, type Adapter, type AuthApi } from './adapters';
 import type { DB, Profile, Table } from './types';
 
-const env = import.meta.env;
-export const firebaseConfigured = !!(env.VITE_FIREBASE_API_KEY && env.VITE_FIREBASE_PROJECT_ID);
+import { FIREBASE_DEFAULTS as D } from './firebase.config';
 
-const app = firebaseConfigured
-  ? initializeApp({
-      apiKey: env.VITE_FIREBASE_API_KEY,
-      authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || `${env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-      projectId: env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: env.VITE_FIREBASE_APP_ID,
-    })
-  : null;
+const env = import.meta.env;
+const config = {
+  apiKey: env.VITE_FIREBASE_API_KEY || D.apiKey,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || D.authDomain,
+  projectId: env.VITE_FIREBASE_PROJECT_ID || D.projectId,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || D.storageBucket,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || D.messagingSenderId,
+  appId: env.VITE_FIREBASE_APP_ID || D.appId,
+};
+// Set VITE_DEMO=1 to run without an account (data stays in the browser).
+export const firebaseConfigured = env.VITE_DEMO !== '1' && !!(config.apiKey && config.projectId);
+
+const app = firebaseConfigured ? initializeApp(config) : null;
 
 // Offline cache: the app keeps working without a connection and syncs later.
 const fs = app ? initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }) : null;
