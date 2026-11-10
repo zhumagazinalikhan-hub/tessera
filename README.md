@@ -38,6 +38,9 @@ Data lives at `users/{uid}` (profile) and `users/{uid}/{tasks,habits,checkins,da
 
 ## Deploy
 
+**Firebase Hosting (main site): https://tessera-5216d.web.app** — `.github/workflows/firebase-hosting.yml` deploys every push to `main`. It needs one repository secret, `FIREBASE_SERVICE_ACCOUNT`: the JSON from Firebase console → Project settings → Service accounts → Generate new private key.
+
+
 **GitHub Pages (set up):** every push to `main` builds and publishes the site with `.github/workflows/deploy.yml`. One-time step: repo **Settings → Pages → Source: GitHub Actions**. The site appears at `https://<user>.github.io/<repo>/`. To turn on Firebase there, add the six `VITE_FIREBASE_*` values under **Settings → Secrets and variables → Actions**.
 
 **Other hosts:** 
