@@ -2,7 +2,7 @@
 // Layout is in iPhone points (430 × 932) and rendered at 3× (1290 × 2796).
 import type { DB, Level } from '../data/types';
 import type { Ayah } from './ayah';
-import { addDays, fromISO, toISO } from './dates';
+import { addDays, fromISO, toISO, today } from './dates';
 import { labelFor, levelOn, lineOfDay, lived, openTasks, streak, todayTasks } from './logic';
 import { wordFor } from './words';
 
@@ -146,6 +146,9 @@ export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: Wal
     y += h + GAP;
   }
 
+  if (fromISO(date).getDay() === 5) {
+    y = drawClosing(ctx, db, date, X, W, y, GAP);
+  } else {
   // ---- Tasks ----
   const tasks = tasksFor(db, date);
   const planned = tasks.filter((t) => t.status === 'open').reduce((a, t) => a + t.estimate_min, 0);
@@ -317,11 +320,117 @@ export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: Wal
   text(ctx, `${yearDays - doy} days left · ${Math.round((doy / yearDays) * 100)}% of ${d0.getFullYear()}`, wx + 12, y + sq - 12, C.pink);
   y += sq + GAP;
 
+  }
+
   // ---- Quote ----
   font(ctx, 900, 17);
-  const q = wrap(ctx, `“${lineOfDay(date).text}”`, W - 16, 2);
+  const quote = fromISO(date).getDay() === 5 ? 'Close the week. Start Monday light.' : lineOfDay(date).text;
+  const q = wrap(ctx, `“${quote}”`, W - 16, 2);
   q.forEach((l, i) => text(ctx, l, WP_W / 2, y + 20 + i * 22, '#fff', 'center'));
   return y + 20 + (q.length - 1) * 22;
+}
+
+/** Friday: the week's summary instead of the daily layout. */
+function drawClosing(ctx: Ctx, db: DB, date: string, X: number, W: number, y0: number, GAP: number): number {
+  let y = y0;
+  const ws = addDays(date, -4); // Monday
+  const we = addDays(ws, 6);
+  const week = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
+  const inWeek = (iso: string | null) => !!iso && iso.slice(0, 10) >= ws && iso.slice(0, 10) <= we;
+  const closed = db.tasks.filter((t) => t.status === 'done' && inWeek(t.done_at));
+  const handed = db.tasks.filter((t) => t.status === 'delegated');
+  const slipped = db.tasks.filter(
+    (t) => t.status === 'open' && ((t.due_date !== null && t.due_date < date && t.due_date >= ws) || (t.today_date !== null && t.today_date < date && t.today_date >= ws)),
+  );
+
+  // Header + three numbers
+  const hH = 92;
+  card(ctx, X, y, W, hH);
+  label(ctx, 'Friday closing', X + 14, y + 20, C.pink);
+  label(ctx, `Week of ${fromISO(ws).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`, X + W - 14, y + 20, C.muted, 'right');
+  const stats: [string, number, string, string][] = [
+    ['Closed', closed.length, 'rgba(76,176,124,0.18)', C.green],
+    ['Handed off', handed.length, 'rgba(233,166,58,0.18)', '#F5C46B'],
+    ['Slipped', slipped.length, 'rgba(224,74,104,0.2)', C.pink],
+  ];
+  const sw = (W - 28 - 16) / 3;
+  stats.forEach(([name, n, bg, fg], i) => {
+    const sx = X + 14 + i * (sw + 8);
+    rr(ctx, sx, y + 30, sw, 50, 14);
+    ctx.fillStyle = bg;
+    ctx.fill();
+    font(ctx, 800, 9);
+    text(ctx, name.toUpperCase(), sx + 10, y + 46, fg);
+    font(ctx, 900, 22);
+    text(ctx, String(n), sx + 10, y + 72, fg);
+  });
+  y += hH + GAP;
+
+  // Daily levels Mon–Fri
+  const dH = 58;
+  card(ctx, X, y, W, dH);
+  label(ctx, 'Daily levels', X + 14, y + 20);
+  const lw = (W - 28 - 16) / 5;
+  week.slice(0, 5).forEach((d, i) => {
+    const lx = X + 14 + i * (lw + 4);
+    const lv = d < date ? lived(db, d) : null;
+    font(ctx, 800, 8.5);
+    text(ctx, fromISO(d).toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase(), lx + lw / 2, y + 33, C.faint, 'center');
+    rr(ctx, lx, y + 37, lw, 15, 7.5);
+    ctx.fillStyle = lv ? LEVEL[lv] : d === date ? 'rgba(255,255,255,0.16)' : 'rgba(255,255,255,0.07)';
+    ctx.fill();
+    font(ctx, 900, 9);
+    const notYet = d >= today() && d !== date;
+    text(ctx, lv ? (lv === 'target' ? '100%' : lv === 'min' ? 'Min' : 'Max') : d === date ? 'Today' : notYet ? '–' : 'Rest', lx + lw / 2, y + 47.5, lv ? '#000' : C.muted, 'center');
+  });
+  y += dH + GAP;
+
+  // Habits this week: name + 7 dots, two columns
+  const habits = db.habits.filter((h) => !h.archived).slice(0, 6);
+  if (habits.length) {
+    const rows = Math.ceil(habits.length / 2);
+    const hH2 = 28 + rows * 24 + 4;
+    card(ctx, X, y, W, hH2);
+    label(ctx, 'Habits this week', X + 14, y + 20);
+    const colW = (W - 28 - 12) / 2;
+    habits.forEach((h, i) => {
+      const cx = X + 14 + (i % 2) * (colW + 12);
+      const cy = y + 32 + Math.floor(i / 2) * 24;
+      font(ctx, 800, 11.5);
+      text(ctx, fit(ctx, h.name, colW - 7 * 12 - 6), cx, cy + 10, C.text);
+      week.forEach((d, k) => {
+        const dx = cx + colW - (7 - k) * 12 + 5;
+        ctx.beginPath();
+        ctx.arc(dx, cy + 6, 4.5, 0, Math.PI * 2);
+        const lv = levelOn(db.checkins, h.id, d);
+        ctx.fillStyle = lv ? LEVEL[lv] : d > date ? 'rgba(255,255,255,0.07)' : 'rgba(255,255,255,0.16)';
+        ctx.fill();
+      });
+    });
+    y += hH2 + GAP;
+  }
+
+  // Slipped list
+  const sH = 30 + Math.max(1, Math.min(3, slipped.length)) * 22 + 22;
+  card(ctx, X, y, W, sH, 22, 'rgba(224,74,104,0.07)', 'rgba(255,107,136,0.3)');
+  label(ctx, slipped.length ? 'What slipped' : 'Nothing slipped', X + 14, y + 20, C.pink);
+  if (!slipped.length) {
+    font(ctx, 700, 13);
+    text(ctx, 'Every task closed, handed off or on time. Well done.', X + 14, y + 42, C.soft);
+  }
+  slipped.slice(0, 3).forEach((t, i) => {
+    font(ctx, 800, 13);
+    text(ctx, fit(ctx, `•  ${t.title}`, W - 110), X + 14, y + 42 + i * 22, C.text);
+    font(ctx, 700, 11);
+    const wd = (iso: string) => fromISO(iso).toLocaleDateString('en-GB', { weekday: 'short' });
+    const when = t.due_date && t.due_date < date ? `due ${wd(t.due_date)}` : t.today_date ? `planned ${wd(t.today_date)}` : 'planned';
+    text(ctx, when, X + W - 14, y + 42 + i * 22, C.muted, 'right');
+  });
+  font(ctx, 700, 11);
+  text(ctx, 'Open Closing in Tessera · 10 min', X + 14, y + sH - 12, C.muted);
+  if (slipped.length > 3) text(ctx, `+${slipped.length - 3} more`, X + W - 14, y + sH - 12, C.muted, 'right');
+  y += sH + GAP;
+  return y;
 }
 
 export async function ensureFonts() {
