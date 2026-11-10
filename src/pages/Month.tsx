@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useStore } from '../data/store';
 import type { Level } from '../data/types';
 import { fromISO, today, toISO } from '../lib/dates';
-import { lived, todayTasks } from '../lib/logic';
+import { ALL_DONE_COLOR, allHabitsDone, lived, todayTasks } from '../lib/logic';
 import { PageHead } from '../components/ui';
 
 const COLOR: Record<Level, string> = { min: 'var(--amber)', target: 'var(--green-bar)', max: 'var(--crimson)' };
@@ -60,7 +60,7 @@ export default function Month() {
                 style={{
                   aspectRatio: '1',
                   borderRadius: 12,
-                  background: lv ? COLOR[lv] : 'var(--track)',
+                  background: d <= t0 && allHabitsDone(db, d) ? ALL_DONE_COLOR : lv ? COLOR[lv] : 'var(--track)',
                   color: lv ? '#fff' : 'var(--muted)',
                   display: 'flex',
                   alignItems: 'center',
@@ -80,6 +80,7 @@ export default function Month() {
           <span style={{ color: 'var(--target-fg)' }}>100% · {c('target')}</span>
           <span style={{ color: 'var(--min-fg)' }}>Min · {c('min')}</span>
           <span style={{ color: 'var(--max-fg)' }}>Max · {c('max')}</span>
+          <span style={{ color: ALL_DONE_COLOR }}>All habits · {past.filter((d) => allHabitsDone(db, d)).length}</span>
           <span className="muted">Rest · {past.length - kept}</span>
         </div>
       </div>

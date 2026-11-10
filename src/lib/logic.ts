@@ -46,6 +46,19 @@ export function lived(db: DB, date: string): Level | null {
   return (['target', 'max', 'min'] as Level[]).sort((a, b) => n(b) - n(a))[0];
 }
 
+/** True when every active habit was checked in (at any level) on that day. */
+export function allHabitsDone(db: DB, date: string): boolean {
+  const relevant = db.habits.filter((h) => {
+    if (h.archived) return false;
+    if (h.created_at.slice(0, 10) <= date) return true;
+    return db.checkins.some((c) => c.habit_id === h.id && c.date <= date);
+  });
+  if (!relevant.length) return false;
+  return relevant.every((h) => db.checkins.some((c) => c.habit_id === h.id && c.date === date));
+}
+
+export const ALL_DONE_COLOR = '#4DA3FF';
+
 // ---------- Tasks ----------
 
 export const openTasks = (db: DB) => db.tasks.filter((t) => t.status === 'open');

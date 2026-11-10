@@ -3,7 +3,7 @@
 import type { DB, Level } from '../data/types';
 import type { Ayah } from './ayah';
 import { addDays, fromISO, toISO, today } from './dates';
-import { labelFor, levelOn, lineOfDay, lived, openTasks, streak, todayTasks } from './logic';
+import { ALL_DONE_COLOR, allHabitsDone, labelFor, levelOn, lineOfDay, lived, openTasks, streak, todayTasks } from './logic';
 import { wordFor } from './words';
 
 export const WP_W = 430;
@@ -246,7 +246,15 @@ export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: Wal
       const lv = lived(db, iso);
       past++;
       if (lv) kept++;
-      if (lv) {
+      if (allHabitsDone(db, iso)) {
+        ctx.fillStyle = ALL_DONE_COLOR;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8.6, 0, Math.PI * 2);
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = 'rgba(77,163,255,0.45)';
+        ctx.stroke();
+      } else if (lv) {
         ctx.fillStyle = LEVEL[lv];
         ctx.fill();
       } else {
@@ -255,7 +263,7 @@ export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: Wal
         ctx.stroke();
       }
     } else if (iso === date) {
-      ctx.fillStyle = '#fff';
+      ctx.fillStyle = allHabitsDone(db, iso) ? ALL_DONE_COLOR : '#fff';
       ctx.fill();
       ctx.beginPath();
       ctx.arc(cx, cy, 9, 0, Math.PI * 2);
@@ -280,12 +288,12 @@ export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: Wal
   font(ctx, 800, 9);
   let lx = X + 12;
   const ly = y + sq - 12;
-  for (const [name, col] of [['Min', LEVEL.min], ['100%', LEVEL.target], ['Max', LEVEL.max]] as const) {
+  for (const [name, col] of [['Min', LEVEL.min], ['100%', LEVEL.target], ['Max', LEVEL.max], ['All', ALL_DONE_COLOR]] as const) {
     rr(ctx, lx, ly - 7.5, 8, 8, 3);
     ctx.fillStyle = col;
     ctx.fill();
     text(ctx, name, lx + 11, ly, C.muted);
-    lx += 11 + ctx.measureText(name).width + 8;
+    lx += 11 + ctx.measureText(name).width + 5;
   }
   rr(ctx, lx + 1, ly - 6.5, 6, 6, 2);
   ctx.lineWidth = 1.6;
