@@ -104,7 +104,22 @@ function tasksFor(db: DB, date: string) {
   return [...picked, ...extra].slice(0, 4);
 }
 
-export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: WallpaperInput): number {
+/** Space under the iOS clock and above the flashlight/camera buttons (points). */
+const TOP_IDEAL = 272;
+const TOP_MIN = 236;
+const BOTTOM_MAX = 815;
+
+/**
+ * Draws the wallpaper with comfortable room under the clock. If the day has a lot of
+ * content, the cards move up (never above TOP_MIN) so nothing reaches the buttons.
+ */
+export function drawWallpaper(canvas: HTMLCanvasElement, input: WallpaperInput): number {
+  const bottom = drawAt(canvas, input, TOP_IDEAL);
+  if (bottom <= BOTTOM_MAX) return bottom;
+  return drawAt(canvas, input, Math.max(TOP_MIN, TOP_IDEAL - (bottom - BOTTOM_MAX)));
+}
+
+function drawAt(canvas: HTMLCanvasElement, { db, date, ayah }: WallpaperInput, top: number): number {
   canvas.width = WP_W * WP_SCALE;
   canvas.height = WP_H * WP_SCALE;
   const ctx = canvas.getContext('2d')!;
@@ -114,7 +129,7 @@ export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: Wal
 
   const X = 18;
   const W = WP_W - 36;
-  let y = 228;
+  let y = top;
   const GAP = 7;
 
   // ---- Ayah ----
@@ -157,7 +172,7 @@ export function drawWallpaper(canvas: HTMLCanvasElement, { db, date, ayah }: Wal
   const tH = 8 + 16 + Math.max(1, tasks.length) * rowH + 6;
   card(ctx, X, y, W, tH);
   label(ctx, 'Today', X + 14, y + 20);
-  label(ctx, tasks.length ? `${hm(planned)} · Margin ${hm(Math.max(0, cap - planned))}` : '', X + W - 14, y + 20, C.muted, 'right');
+  label(ctx, !tasks.length ? '' : cap - planned > 0 ? `${hm(planned)} · Margin ${hm(cap - planned)}` : `${hm(planned)} · full day`, X + W - 14, y + 20, C.muted, 'right');
   if (!tasks.length) {
     font(ctx, 700, 13);
     text(ctx, 'Nothing planned. Pick three on your Board.', X + 14, y + 24 + 18, C.muted);
