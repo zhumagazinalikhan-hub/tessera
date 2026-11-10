@@ -285,6 +285,9 @@ function drawAt(canvas: HTMLCanvasElement, { db, date, ayah }: WallpaperInput, t
       ctx.lineWidth = 2;
       ctx.strokeStyle = 'rgba(255,255,255,0.3)';
       ctx.stroke();
+      // today's date number inside the dot
+      font(ctx, 900, 7.5);
+      text(ctx, String(n), cx, cy + 2.7, '#000', 'center');
     } else {
       ctx.fillStyle = C.future;
       ctx.fill();
@@ -298,7 +301,16 @@ function drawAt(canvas: HTMLCanvasElement, { db, date, ayah }: WallpaperInput, t
     }
   }
   label(ctx, monthName, X + 12, y + 20);
-  label(ctx, past ? `${kept}/${past}` : '', X + sq - 12, y + 20, C.green, 'right');
+  // share of the month still ahead, with a thin progress bar under the header
+  const daysLeft = nDays - d0.getDate();
+  const pctLeft = Math.round((daysLeft / nDays) * 100);
+  label(ctx, `${pctLeft}% left`, X + sq - 12, y + 20, C.green, 'right');
+  rr(ctx, X + 12, y + 27, sq - 24, 3, 1.5);
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fill();
+  rr(ctx, X + 12, y + 27, Math.max(3, ((sq - 24) * d0.getDate()) / nDays), 3, 1.5);
+  ctx.fillStyle = C.green;
+  ctx.fill();
   // legend
   font(ctx, 800, 9);
   let lx = X + 12;
