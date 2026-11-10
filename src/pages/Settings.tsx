@@ -18,7 +18,7 @@ export default function Settings() {
 
   return (
     <div className="page" style={{ maxWidth: 640 }}>
-      <PageHead over={mode === 'cloud' ? email ?? 'Signed in' : 'Demo mode · saved in this browser'} title="Settings" sub="Your week, your rules." />
+      <PageHead over={mode === 'demo' ? 'Demo mode · saved in this browser' : email ?? 'Signed in'} title="Settings" sub="Your week, your rules." />
 
       <div className="section"><span className="lbl">You</span></div>
       <div className="card pad stack" style={{ gap: 14 }}>
@@ -94,7 +94,7 @@ export default function Settings() {
       <div className="card pad stack" style={{ gap: 10 }}>
         {mode === 'demo' && (
           <div className="banner">
-            Demo mode: your data lives only in this browser. Connect Supabase (see README) to sync across devices.
+            Demo mode: your data lives only in this browser. Connect Firebase (see README) to sync across devices.
           </div>
         )}
         <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
@@ -110,7 +110,7 @@ export default function Settings() {
           >
             Delete all data
           </button>
-          {mode === 'cloud' && <button className="btn sm dark" onClick={signOut}>Sign out</button>}
+          {mode !== 'demo' && <button className="btn sm dark" onClick={signOut}>Sign out</button>}
         </div>
       </div>
       <p className="small muted" style={{ textAlign: 'center', marginTop: 20 }}>Tessera web · v0.1</p>

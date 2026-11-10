@@ -18,6 +18,19 @@ export interface Adapter {
   wipe(userId: string): Promise<void>;
 }
 
+export interface AuthUser {
+  id: string;
+  email: string | null;
+}
+
+export interface AuthApi {
+  onChange(cb: (u: AuthUser | null) => void): () => void;
+  signIn(email: string, password: string): Promise<{ needsConfirm: boolean }>;
+  signUp(email: string, password: string): Promise<{ needsConfirm: boolean }>;
+  google?: () => Promise<void>;
+  signOut(): Promise<void>;
+}
+
 export function defaultProfile(id: string): Profile {
   return {
     id,
@@ -119,5 +132,27 @@ export const cloudAdapter: Adapter = {
     for (const t of ['habit_checkins', 'focus_sessions', 'weekly_reviews', 'day_logs', 'tasks', 'habits'] as Table[]) {
       await sb.from(t).delete().eq('user_id', userId);
     }
+  },
+};
+
+export const supabaseAuth: AuthApi = {
+  onChange(cb) {
+    const sb = supabase!;
+    sb.auth.getSession().then(({ data }) => cb(data.session ? { id: data.session.user.id, email: data.session.user.email ?? null } : null));
+    const { data } = sb.auth.onAuthStateChange((_e, s) => cb(s ? { id: s.user.id, email: s.user.email ?? null } : null));
+    return () => data.subscription.unsubscribe();
+  },
+  async signIn(email, password) {
+    const { error } = await supabase!.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    return { needsConfirm: false };
+  },
+  async signUp(email, password) {
+    const { data, error } = await supabase!.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } });
+    if (error) throw error;
+    return { needsConfirm: !data.session };
+  },
+  async signOut() {
+    await supabase!.auth.signOut();
   },
 };

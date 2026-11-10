@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { Session } from '@supabase/supabase-js';
-import { cloudAdapter, emptyDB, isCloud, localAdapter, supabase, type Adapter, type Change } from './adapters';
+import { emptyDB, type AuthUser, type Change } from './adapters';
+import { backend } from './backend';
 import { sampleData } from './sample';
 import type { Checkin, DayLog, DB, Energy, FocusSession, Habit, Level, Profile, Review, Table, Task } from './types';
 
@@ -12,7 +12,7 @@ type Status = 'loading' | 'signed-out' | 'ready' | 'error';
 export interface Store {
   status: Status;
   error: string | null;
-  mode: 'demo' | 'cloud';
+  mode: 'demo' | 'firebase' | 'supabase';
   email: string | null;
   db: DB;
   toast: string | null;
@@ -56,17 +56,17 @@ const TABLE_KEY: Record<Table, keyof Omit<DB, 'profile'>> = {
 };
 
 export function StoreProvider({ children }: { children: ReactNode }) {
-  const adapter: Adapter = isCloud ? cloudAdapter : localAdapter;
+  const adapter = backend.adapter;
   const [status, setStatus] = useState<Status>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [db, setDb] = useState<DB>(() => emptyDB(DEMO_USER));
   const [toast, setToast] = useState<string | null>(null);
   const dbRef = useRef(db);
   useEffect(() => {
     dbRef.current = db;
   }, [db]);
-  const userId = isCloud ? session?.user.id ?? '' : DEMO_USER;
+  const userId = backend.auth ? user?.id ?? '' : DEMO_USER;
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
@@ -75,32 +75,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // ---- boot ----
   useEffect(() => {
-    if (!isCloud) {
-      localAdapter.load(DEMO_USER).then((d) => {
+    if (!backend.auth) {
+      adapter.load(DEMO_USER).then((d) => {
         setDb(d);
         setStatus('ready');
       });
       return;
     }
-    supabase!.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (!data.session) setStatus('signed-out');
-    });
-    const { data: sub } = supabase!.auth.onAuthStateChange((_e, s) => {
-      setSession(s);
-      if (!s) {
+    return backend.auth.onChange((u) => {
+      setUser((prev) => (prev?.id === u?.id ? prev : u));
+      if (!u) {
         setStatus('signed-out');
         setDb(emptyDB(DEMO_USER));
       }
     });
-    return () => sub.subscription.unsubscribe();
-  }, []);
+  }, [adapter]);
 
   useEffect(() => {
-    if (!isCloud || !session) return;
+    if (!backend.auth || !user) return;
     setStatus('loading');
-    cloudAdapter
-      .load(session.user.id)
+    adapter
+      .load(user.id)
       .then((d) => {
         setDb(d);
         setStatus('ready');
@@ -109,7 +104,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setError(e.message);
         setStatus('error');
       });
-  }, [session]);
+  }, [user, adapter]);
 
   // ---- write path: update memory first, then persist ----
   const commit = useCallback(
@@ -179,8 +174,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return {
       status,
       error,
-      mode: isCloud ? 'cloud' : 'demo',
-      email: session?.user.email ?? null,
+      mode: backend.mode,
+      email: user?.email ?? null,
       db,
       toast,
       showToast,
@@ -262,10 +257,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         commit(fresh, [{ kind: 'profile', row: fresh.profile }]);
       },
       async signOut() {
-        if (supabase) await supabase.auth.signOut();
+        if (backend.auth) await backend.auth.signOut();
       },
     };
-  }, [status, error, session, db, toast, showToast, newTask, putRows, delRow, commit, adapter, userId]);
+  }, [status, error, user, db, toast, showToast, newTask, putRows, delRow, commit, adapter, userId]);
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>;
 }

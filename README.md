@@ -2,7 +2,7 @@
 
 Tasks and habits on one method: every task and habit has a **Min**, a **100%** and a **Max**.
 
-Built with React 19, TypeScript, Vite and Supabase.
+Built with React 19, TypeScript and Vite. Accounts and sync: Firebase (Auth + Firestore), or Supabase as an alternative.
 
 ## Run it
 
@@ -11,9 +11,19 @@ npm install
 npm run dev        # http://localhost:5173
 ```
 
-With no Supabase keys the app runs in **demo mode**: no sign-in, and data stays in this browser (localStorage).
+With no Firebase or Supabase keys the app runs in **demo mode**: no sign-in, and data stays in this browser (localStorage).
 
-## Connect Supabase (accounts + sync)
+## Connect Firebase (accounts + sync)
+
+1. In the Firebase console: **Authentication → Sign-in method**, enable **Email/Password** and **Google**.
+2. **Firestore Database → Create database** (production mode).
+3. **Firestore → Rules**: paste `firestore.rules` from this repo and publish.
+4. **Authentication → Settings → Authorized domains**: add `localhost` and `<user>.github.io`.
+5. **Project settings → Your apps → Web**: copy the config into `.env.local` (see `.env.example`), or into GitHub secrets with the same names for the deployed site.
+
+Data lives at `users/{uid}` (profile) and `users/{uid}/{tasks,habits,checkins,dayLogs,sessions,reviews}`. Firestore's offline cache keeps the app usable without a connection.
+
+## Connect Supabase instead (alternative)
 
 1. Create a project at supabase.com.
 2. Open **SQL Editor** and run `supabase/migrations/0001_init.sql`, then `0002_ayah.sql`
@@ -28,7 +38,7 @@ With no Supabase keys the app runs in **demo mode**: no sign-in, and data stays 
 
 ## Deploy
 
-**GitHub Pages (set up):** every push to `main` builds and publishes the site with `.github/workflows/deploy.yml`. One-time step: repo **Settings → Pages → Source: GitHub Actions**. The site appears at `https://<user>.github.io/<repo>/`. To turn on Supabase there, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` under **Settings → Secrets and variables → Actions**.
+**GitHub Pages (set up):** every push to `main` builds and publishes the site with `.github/workflows/deploy.yml`. One-time step: repo **Settings → Pages → Source: GitHub Actions**. The site appears at `https://<user>.github.io/<repo>/`. To turn on Firebase there, add the six `VITE_FIREBASE_*` values under **Settings → Secrets and variables → Actions**.
 
 **Other hosts:** 
 `npm run build` produces `dist/`. It deploys as a static site to Vercel (`vercel.json` included) or Netlify (`public/_redirects` included). Set the two `VITE_SUPABASE_*` variables in the host's settings.
@@ -55,6 +65,8 @@ With no Supabase keys the app runs in **demo mode**: no sign-in, and data stays 
 src/
   data/types.ts      data model
   data/adapters.ts   demo (localStorage) and Supabase adapters
+  data/firebase.ts   Firebase Auth + Firestore adapter
+  data/backend.ts    picks Firebase, Supabase or demo mode
   data/store.tsx     app state and all actions
   data/sample.ts     sample week
   lib/logic.ts       streaks, load, rebalance, brain-dump sorting, daily lines
