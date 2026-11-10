@@ -14,6 +14,8 @@ export interface Profile {
   onboarded: boolean;
   show_ayah: boolean;
   ayah_lang: 'en' | 'ru';
+  wallpaper_enabled: boolean;
+  wallpaper_token: string | null;
 }
 
 export interface Task {

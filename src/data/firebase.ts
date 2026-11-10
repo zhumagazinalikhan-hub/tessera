@@ -40,7 +40,7 @@ export const firebaseConfigured = env.VITE_DEMO !== '1' && !!(config.apiKey && c
 const app = firebaseConfigured ? initializeApp(config) : null;
 
 // Offline cache: the app keeps working without a connection and syncs later.
-const fs = app ? initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }) : null;
+export const fs = app ? initializeFirestore(app, { localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }) }) : null;
 const auth = app ? getAuth(app) : null;
 
 // users/{uid} holds the profile; each table is a subcollection.

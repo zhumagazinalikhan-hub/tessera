@@ -44,6 +44,8 @@ export function defaultProfile(id: string): Profile {
     onboarded: false,
     show_ayah: true,
     ayah_lang: 'en',
+    wallpaper_enabled: false,
+    wallpaper_token: null,
   };
 }
 

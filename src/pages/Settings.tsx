@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useStore } from '../data/store';
 import { LEVEL_LABEL, type Level, type Profile } from '../data/types';
 import { LevelSwitch, PageHead } from '../components/ui';
@@ -89,6 +90,16 @@ export default function Settings() {
           </div>
         </div>
       </div>
+
+      <div className="section"><span className="lbl">Lock screen</span></div>
+      <Link to="/wallpaper" className="card pad between" style={{ display: 'flex' }}>
+        <span>
+          <b>Daily wallpaper</b>
+          <br />
+          <span className="small muted">{p.wallpaper_enabled ? 'On · updates at midnight' : 'Your day on the iPhone lock screen'}</span>
+        </span>
+        <span aria-hidden="true">›</span>
+      </Link>
 
       <div className="section"><span className="lbl">Data</span></div>
       <div className="card pad stack" style={{ gap: 10 }}>

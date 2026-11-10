@@ -17,6 +17,8 @@ import HabitDetail from './pages/HabitDetail';
 import Closing from './pages/Closing';
 import Month from './pages/Month';
 import Settings from './pages/Settings';
+import Wallpaper from './pages/Wallpaper';
+import { useWallpaperSync } from './data/useWallpaperSync';
 
 const NAV = [
   { to: '/', icon: 'today', label: 'Today' },
@@ -46,6 +48,7 @@ function Shell() {
   const store = useStore();
   const { db, status, toast } = store;
   useTheme();
+  useWallpaperSync();
 
   if (status === 'loading') return <div className="empty muted" style={{ paddingTop: 120 }}>Loading your week…</div>;
   if (status === 'error')
@@ -69,7 +72,7 @@ function Shell() {
           </span>
           tessera
         </div>
-        {[...NAV, { to: '/month', icon: 'month', label: 'Month' }].map((n) => (
+        {[...NAV, { to: '/month', icon: 'month', label: 'Month' }, { to: '/wallpaper', icon: 'sun', label: 'Wallpaper' }].map((n) => (
           <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => `nav ${isActive ? 'active' : ''}`}>
             <Icon name={n.icon} />
             {n.label}
@@ -101,6 +104,7 @@ function Shell() {
           <Route path="/closing" element={<Closing />} />
           <Route path="/month" element={<Month />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/wallpaper" element={<Wallpaper />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

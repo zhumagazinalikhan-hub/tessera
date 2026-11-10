@@ -14,6 +14,7 @@ export interface Store {
   error: string | null;
   mode: 'demo' | 'firebase' | 'supabase';
   email: string | null;
+  uid: string;
   db: DB;
   toast: string | null;
   showToast(msg: string): void;
@@ -176,6 +177,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       error,
       mode: backend.mode,
       email: user?.email ?? null,
+      uid: userId,
       db,
       toast,
       showToast,

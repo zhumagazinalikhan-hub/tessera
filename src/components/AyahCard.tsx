@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../data/store';
 import { today } from '../lib/dates';
-import { ayahRefFor, loadAyah, type Ayah, type AyahLang } from '../lib/ayah';
+import { loadAyahForDate, type Ayah, type AyahLang } from '../lib/ayah';
 
 const T = {
   en: { title: 'Ayah of the day', open: 'Read tafsir', close: 'Hide tafsir', more: 'Read more', less: 'Show less', fail: "Couldn't load today's ayah.", retry: 'Try again', none: 'No tafsir for this ayah in the source.', tr: 'Translation', tf: 'Tafsir' },
@@ -12,7 +12,7 @@ export default function AyahCard() {
   const { db, updateProfile } = useStore();
   const lang: AyahLang = db.profile.ayah_lang ?? 'en';
   const t = T[lang];
-  const ref = ayahRefFor(today());
+  const date = today();
   const [ayah, setAyah] = useState<Ayah | null>(null);
   const [state, setState] = useState<'loading' | 'ok' | 'error'>('loading');
   const [openTafsir, setOpenTafsir] = useState(false);
@@ -20,13 +20,13 @@ export default function AyahCard() {
 
   const load = useCallback(() => {
     setState('loading');
-    loadAyah(ref, lang)
+    loadAyahForDate(date, lang)
       .then((a) => {
         setAyah(a);
         setState('ok');
       })
       .catch(() => setState('error'));
-  }, [ref, lang]);
+  }, [date, lang]);
 
   useEffect(load, [load]);
 
