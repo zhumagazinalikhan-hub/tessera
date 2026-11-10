@@ -109,7 +109,7 @@ function Shell() {
         </Routes>
       </main>
       <nav className="bottom-nav" aria-label="Main">
-        {NAV.map((n) => (
+        {[...NAV, { to: '/settings', icon: 'settings', label: 'More' }].map((n) => (
           <NavLink key={n.to} to={n.to} end={n.to === '/'} className={({ isActive }) => (isActive ? 'active' : '')}>
             <Icon name={n.icon} />
             {n.label}

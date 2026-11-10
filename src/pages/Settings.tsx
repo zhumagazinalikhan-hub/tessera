@@ -91,6 +91,15 @@ export default function Settings() {
         </div>
       </div>
 
+      <div className="section"><span className="lbl">More</span></div>
+      <Link to="/month" className="card pad between" style={{ display: 'flex', marginBottom: 10 }}>
+        <span>
+          <b>Month</b>
+          <br />
+          <span className="small muted">Your month card</span>
+        </span>
+        <span aria-hidden="true">›</span>
+      </Link>
       <div className="section"><span className="lbl">Lock screen</span></div>
       <Link to="/wallpaper" className="card pad between" style={{ display: 'flex' }}>
         <span>
