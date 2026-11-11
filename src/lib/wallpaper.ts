@@ -134,12 +134,46 @@ function drawAt(canvas: HTMLCanvasElement, { db, date, ayah }: WallpaperInput, t
 
   // ---- Ayah ----
   if (ayah) {
+    const maxW = W - 28;
+    // Translation: up to 3 lines so long verses are not cut with an ellipsis.
     font(ctx, 700, 13);
-    const tr = wrap(ctx, `“${ayah.translation}”`, W - 28, 2);
+    const tr = wrap(ctx, `“${ayah.translation}”`, maxW, 3);
+    // Arabic: shrink the font until it fits in 2 lines (3 for very long verses),
+    // then balance the lines so none runs past the card.
+    const words = ayah.arabic.split(/\s+/).filter(Boolean);
+    const greedy = (limit: number): string[] => {
+      const out: string[] = [];
+      let cur = '';
+      for (const w of words) {
+        const next = cur ? `${cur} ${w}` : w;
+        if (cur && ctx.measureText(next).width > limit) {
+          out.push(cur);
+          cur = w;
+        } else cur = next;
+      }
+      if (cur) out.push(cur);
+      return out;
+    };
     let arSize = 27;
-    font(ctx, 400, arSize, 'Amiri');
-    while (ctx.measureText(ayah.arabic).width > (W - 28) * 2 && arSize > 18) font(ctx, 400, --arSize, 'Amiri');
-    const arLines = ctx.measureText(ayah.arabic).width > W - 28 ? 2 : 1;
+    let arabicLines: string[] = [];
+    for (; arSize >= 15; arSize--) {
+      font(ctx, 400, arSize, 'Amiri');
+      arabicLines = greedy(maxW);
+      if (arabicLines.length <= 2 || (arSize <= 20 && arabicLines.length <= 3)) break;
+    }
+    // balance: narrow the limit while the line count stays the same
+    const count = arabicLines.length;
+    if (count > 1) {
+      const total = ctx.measureText(words.join(' ')).width;
+      for (let lim = total / count + 8; lim < maxW; lim += 6) {
+        const g = greedy(lim);
+        if (g.length === count) {
+          arabicLines = g;
+          break;
+        }
+      }
+    }
+    const arLines = arabicLines.length;
     const arLH = arSize * 1.45;
     const h = 10 + 12 + arLines * arLH + 8 + tr.length * 18 + 10;
     card(ctx, X, y, W, h);
@@ -148,13 +182,7 @@ function drawAt(canvas: HTMLCanvasElement, { db, date, ayah }: WallpaperInput, t
     ctx.save();
     ctx.direction = 'rtl';
     font(ctx, 400, arSize, 'Amiri');
-    if (arLines === 1) text(ctx, ayah.arabic, X + W / 2, y + 22 + arLH * 0.78, '#fff', 'center');
-    else {
-      const parts = ayah.arabic.split(' ');
-      const half = Math.ceil(parts.length / 2);
-      text(ctx, parts.slice(0, half).join(' '), X + W / 2, y + 22 + arLH * 0.78, '#fff', 'center');
-      text(ctx, parts.slice(half).join(' '), X + W / 2, y + 22 + arLH * 1.78, '#fff', 'center');
-    }
+    arabicLines.forEach((line, i) => text(ctx, line, X + W / 2, y + 22 + arLH * (0.78 + i), '#fff', 'center'));
     ctx.restore();
     font(ctx, 700, 13);
     tr.forEach((line, i) => text(ctx, line, X + W / 2, y + 22 + arLines * arLH + 22 + i * 18, C.soft, 'center'));
